@@ -1,0 +1,36 @@
+---
+- name: install fail2ban
+  apt: name=fail2ban state=present
+
+- name: Copy jail configuration
+  command: cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+  args:
+    creates: '/etc/fail2ban/jail.local'
+  notify: 'restart fail2ban'
+
+- name: copy in drachtio stanza into jail.local
+  blockinfile:
+    path: /etc/fail2ban/jail.local
+    block: |
+      [drachtio-tcp]
+      maxretry = 1
+      bantime = 86400
+      enabled  = true
+      filter   = drachtio
+      port     = {{drachtio_ports}}
+      protocol = tcp
+      logpath  = /var/log/drachtio/drachtio.log
+
+      [drachtio-udp]
+      maxretry = 1
+      bantime = 86400
+      enabled  = true
+      filter   = drachtio
+      port     = {{drachtio_ports}}
+      protocol = udp
+      logpath  = /var/log/drachtio/drachtio.log
+
+- name: copy drachtio filter
+  copy: src=drachtio.conf dest=/etc/fail2ban/filter.d/drachtio.conf
+  notify: 'restart fail2ban'
+
